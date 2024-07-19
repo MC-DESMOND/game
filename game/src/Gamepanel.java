@@ -37,12 +37,12 @@ public class Gamepanel extends JPanel implements ActionListener {
     int speed = 3;
     int yourspeed = 1;
     int ispeed = speed;
-    int max = 200;
-    int yourx = 20;
-    int yourix = yourx;
-    int youry = SCREENHEIGHT/2;
+    int max = 50;
+    int yourx = (SCREENWIDTH/2)-10;
+    int youry = SCREENHEIGHT-150;
+    int yourix = youry;
     int passed = 0;
-    int enysPerV = 5;
+    int enysPerV = 4;
     static final int UNITSIZE = 12;
     static final int GAMEUNITS = (SCREENWIDTH*SCREENHEIGHT)/UNITSIZE;
     final int enysx[] = new int[GAMEUNITS];
@@ -51,7 +51,7 @@ public class Gamepanel extends JPanel implements ActionListener {
     ArrayList<Integer> ylist;
     int[] ri = new int[100];
     int introsleep = 60*4;
-    int ra = 10;
+    int ra = 3;
     int imagesnum = 5;
     boolean f = false;
     boolean sp = false;
@@ -62,18 +62,23 @@ public class Gamepanel extends JPanel implements ActionListener {
     boolean played =  false;
     boolean started = false;
     boolean setted  = false;
+    boolean sw = false;
     int ci = 0;
     boolean cc = false;
     JButton reBtn;
     KeyAdapter AL;
     ArrayList<JButton> buttons = new ArrayList<>();
     String rootFolder = "C:\\Users\\MC DESMOND\\dextop\\java\\game\\game\\src\\cars\\";
-
+    JProgressBar progressBar;
     public Gamepanel() throws IOException {
         super();
-        // Load the image
         // Convert to BufferedImage for efficiency (optional)
-
+        // progressBar = new JProgressBar(0);
+        // progressBar.setValue(0);
+        // progressBar.setSize(300, 2);
+        // // progressBar.setBounds(100,100,3,2);
+        // progressBar.setStringPainted(true);
+        // progressBar.setIndeterminate(true);
         carImages = new ArrayList<>();
         carIcons = new ArrayList<>();
         xlist = new ArrayList<>();
@@ -84,7 +89,8 @@ public class Gamepanel extends JPanel implements ActionListener {
             System.out.println(name);
             File file = new File(name);
             // file.setReadable(true);
-            carImages.add(ImageIO.read(file));
+            BufferedImage in = ImageIO.read(file);
+            carImages.add(in);
             ImageIcon icon = new ImageIcon(name);
             carIcons.add(icon);
             
@@ -93,16 +99,17 @@ public class Gamepanel extends JPanel implements ActionListener {
         image = carImages.get(3);
         logo = ImageIO.read(new File("C:\\Users\\MC DESMOND\\dextop\\java\\game\\game\\src\\logo.png"));
         eIs = ImageIO.read(new File("C:\\Users\\MC DESMOND\\dextop\\java\\game\\game\\src\\cars\\car3.png"));
-        File  roadf = new File("C:\\Users\\MC DESMOND\\dextop\\java\\game\\game\\src\\road.png");
+        File  roadf = new File("C:\\Users\\MC DESMOND\\dextop\\java\\game\\game\\src\\cars\\road.png");
         roadi = ImageIO.read(roadf); // Convert to BufferedImage for efficiency (optional)
-        xlist = genrange(SCREENWIDTH, SCREENWIDTH*3,eIs.getWidth()*2);
-        ylist = genrange(0, SCREENHEIGHT,eIs.getHeight()+20);
+        xlist = genrange(0, SCREENWIDTH,eIs.getWidth()+20);
+        ylist = genrange(1-(SCREENHEIGHT*2), 0,eIs.getHeight()*2);
         System.out.println(xlist);
         System.out.println(ylist);
         random = new Random();
         this.setPreferredSize(new Dimension(SCREENWIDTH,SCREENHEIGHT));
         this.setBackground(Color.black);
         this.setFocusable(true);
+        
         AL = new myKeyAdapter();
         cc = true;
         String[] songsp = new String[10];
@@ -117,7 +124,11 @@ public class Gamepanel extends JPanel implements ActionListener {
             e1.printStackTrace();
         }
         for (int i =0 ;i <= ra ; i++){
-            ri[i] = (int) (roadi.getWidth())*i;
+            ri[i] = (int) 1-((roadi.getHeight())*i);
+        }
+        for (int i=0; i <= enysPerV;i++ ){
+            BufferedImage img2 = carImages.get(random.nextInt(0,enysPerV));
+            enys[i] = (BufferedImage) img2;
         }
         sec = introsleep;
         StartGame();
@@ -154,10 +165,12 @@ public class Gamepanel extends JPanel implements ActionListener {
     
 
     public void moveEnys(){
-        int x,y;
+        int x = 0;
+        int y = 0;
         BufferedImage img;
         for (int i=0; i <= enysPerV;i++ ){
-            if (enysx[i] <= Integer.parseInt(String.format("-%d",eIs.getWidth()))){
+            
+            if (enysy[i] >= SCREENHEIGHT+eIs.getHeight()){
                 img = carImages.get(random.nextInt(0,enysPerV));
                 x = xlist.get(random.nextInt(xlist.size()-1));
                 y = ylist.get(random.nextInt(ylist.size()-1));
@@ -165,19 +178,36 @@ public class Gamepanel extends JPanel implements ActionListener {
                 enysy[i] = y;
                 enys[i] = (BufferedImage) img;
                 passed += 1;
-            }else{
+                
+            }
+            
+            else{
+                x = enysx[i];
                 if (paused == false)
                     {
-                        x = enysx[i] - speed;
+                        y = enysy[i] + speed;
+                        if (enysx[i] == 0){
+                            x = xlist.get(random.nextInt(xlist.size()-1));
+                        }
+                        for(int o=0;o<=enysPerV;o++){
+                            
+                            if (x == enysx[o]){
+                                while (enysy[o]-enys[i].getHeight()-10 <= y && y <= enysy[o]) {
+                                    y--;
+                                }
+                            }
+                            
+                        }
                 }else{
-                    x = enysx[i];
+                    y = enysy[i];
                 }
-                y = enysy[i];
                 
-                enysx[i] = x;
-                enysy[i] = y;
+                
+                
                 // speed = new Integer(ispeed + passed/10);
             }
+            enysx[i] = x;
+            enysy[i] = y;
             
             if (passed > max){
                 // won = true;
@@ -187,9 +217,11 @@ public class Gamepanel extends JPanel implements ActionListener {
     }
     public void cheakEnys(){
         for (int i=0; i <= enysPerV;i++ ){
-            if (enysx[i] <= yourx+image.getWidth()-10 && enysx[i] > yourx){
-                if (enysy[i] >= youry-image.getHeight() && enysy[i] <= youry+image.getHeight()){
-                    
+            if 
+                (enysx[i] <= yourx+image.getWidth() && enysx[i]+enys[i].getWidth() >= yourx)
+            {
+             if ((enysy[i]+enys[i].getHeight() >= youry && enysy[i] <= youry+image.getHeight()))   
+                 {   
                     Running = false;
                     
                 }
@@ -201,27 +233,30 @@ public class Gamepanel extends JPanel implements ActionListener {
         
         if (Running)
         {
-            
             for (int i =0 ;i < ra ; i++){
-                if (ri[i] <= Integer.parseInt(String.format("-%d",roadi.getWidth()))){
-                    ri[i] = (int) roadi.getWidth()/2;
+                if (ri[i] >= roadi.getHeight()){
+                    // System.out.println(ri[i]-roadi.getHeight()); 
+                    ri[i] = 1-((roadi.getHeight()-((ri[i]-roadi.getHeight())+50))*(ra-2));
+                    // System.out.println(ri[i]);                    
+                                       
+                    sw = !sw;
                 }else{
                     if (paused == false)
                         {
-                            ri[i] -= (int) (yourx/10) +3;
+                            ri[i] += (int) (((SCREENHEIGHT-100)-youry)/10) +3;
                         }
                     
                 }
             }
             for (int i =0 ;i < ra ; i++){
-                g.drawImage(roadi, ri[i], 0, null);
+                g.drawImage(roadi, 0, ri[i], null);
             }
             // System.out.println(ri);
             if (sp == false){
-                if (yourx > yourix){
-                    yourx -= speed;
-                }else if(yourx < yourix){
-                    yourx = yourix;
+                if (youry < yourix){
+                    youry += speed;
+                }else if(youry > yourix){
+                    youry = yourix;
                 }}
 
             g.drawImage(image, yourx, youry, null);
@@ -245,6 +280,12 @@ public class Gamepanel extends JPanel implements ActionListener {
                 g.setFont(new Font("Courier",Font.BOLD,20));
                 FontMetrics metricsmm = getFontMetrics(g.getFont());
                 g.drawString("mute", (SCREENWIDTH - metricsmm.stringWidth("mute"))-10, g.getFont().getSize());
+            }g.setColor(Color.cyan);
+            for (int i : xlist){
+                g.drawLine(i,0,i,SCREENWIDTH);
+            }
+            for (int i : ylist){
+                g.drawLine(0,i+SCREENHEIGHT*2,SCREENHEIGHT,i+SCREENHEIGHT*2);
             }
 
         }else{
@@ -295,7 +336,13 @@ public class Gamepanel extends JPanel implements ActionListener {
         
         // g.dispose();
     }
-    
+    public static void pause(int s){
+        try {
+            Thread.sleep(s);
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+    }
     class CAL implements ActionListener {
         BufferedImage d;
         JPanel p;
@@ -323,31 +370,32 @@ public class Gamepanel extends JPanel implements ActionListener {
         
         if (paused == false){
             switch(e.getKeyCode()){
-                case KeyEvent.VK_UP:
-                    if (youry <= 0){}else{
+                case KeyEvent.VK_LEFT:
+                    if (yourx <= 0){}else{
                         
-                        youry = youry - UNITSIZE;}
+                        yourx = yourx - UNITSIZE;}
+                    break;
+                case KeyEvent.VK_RIGHT:
+                if (yourx >= SCREENWIDTH-UNITSIZE*2){}else{
+                    yourx = yourx + UNITSIZE;}
+                    break;
+                case KeyEvent.VK_UP:
+                    sp = true;
+                    if (youry <= 0){}else{
+                        youry -= speed;}
                     break;
                 case KeyEvent.VK_DOWN:
-                if (youry >= SCREENHEIGHT-UNITSIZE*2){}else{
-                    youry = youry + UNITSIZE;}
-                    break;
-                case KeyEvent.VK_SPACE:
-                    sp = true;
-                    yourx += speed;
-                    break;
-                case KeyEvent.VK_BACK_SPACE:
                     sp =false;
                     break;
                 case KeyEvent.VK_H:
                     for (int i=0; i <= enysPerV;i++ ){
-                        if (enysy[i] < youry+(image.getHeight()/4) && enysy[i] >= youry-enys[i].getHeight() ){
+                        if (enysx[i] < yourx+(image.getWidth()/4) && enysx[i] >= yourx-enys[i].getWidth() ){
                            
-                            enysy[i] -= UNITSIZE;
+                            enysx[i] -= UNITSIZE;
                         }
-                        else if (enysy[i] > youry+(image.getHeight()/4)  && enysy[i] <= youry+enys[i].getHeight()+10 ){
+                        else if (enysx[i] > yourx+(image.getWidth()/4)  && enysx[i] <= yourx+enys[i].getWidth()+10 ){
                            
-                            enysy[i] += UNITSIZE;
+                            enysx[i] += UNITSIZE;
                         }
                     }
                     if (Running){try {
@@ -378,13 +426,6 @@ public class Gamepanel extends JPanel implements ActionListener {
             
         }
     }
-
-
-/*BufferedImage@34b5ee6: type = 6 ColorModel: #pixelBits = 32 numComponents = 4 color space = java.awt.color.ICC_ColorSpace@9325f3f
- transparency = 3 has alpha = true isAlphaPre = false ByteInterleavedRaster: width = 119 height = 66 #numDataElements 4 dataOff[0] = 3 */
-/*BufferedImage@1acd3b84: type = 6 ColorModel: #pixelBits = 32 numComponents = 4 color space = java.awt.color.ICC_ColorSpace@796a366e
- transparency = 3 has alpha = true isAlphaPre = false ByteInterleavedRaster: width = 137 height = 65 #numDataElements 4 dataOff[0] = 3*/
-
     
     public void settings(Graphics g){
         timer.stop();
@@ -392,10 +433,19 @@ public class Gamepanel extends JPanel implements ActionListener {
             buttons.reversed();
             cc = false;
         }
+        
+        
             for (int i=0;i<carImages.size();i++){
                     BufferedImage e = carImages.get(i);
-                    JButton imageButton = new JButton(new ImageIcon(e));
+                    ImageIcon ic = new ImageIcon(e);
+                    JButton imageButton = new JButton(ic);
+                    imageButton.setBackground(Color.black);
+                    imageButton.setText(String.format("car %d -", i));
+                    imageButton.setBorder(BorderFactory.createLineBorder(Color.cyan,1,true));
+                    int marginr = 300;
+                    imageButton.setMargin(new Insets(marginr, marginr, marginr, marginr));
                     // imageButton.setPreferredSize(new Dimension(100, 50));
+                    
                     func f = e2 ->{
                         BufferedImage d = e ;
                         System.out.println("Image Button clicked!");
@@ -413,18 +463,20 @@ public class Gamepanel extends JPanel implements ActionListener {
                             return 0;
                     };
                     imageButton.addActionListener( new CAL(e,this , imageButton,i,f ));
+                    pause(50);
                     buttons.add(imageButton);
                 ;};
             
             buttons.stream().forEach(e -> {
                 // System.out.println(e);
-                add(e);
+                pause(50);
+                add(e,BorderLayout.PAGE_START);
             });
             
         g.setColor(Color.cyan);
         g.setFont(new Font("Courier",Font.BOLD,40));
         FontMetrics metrics33 = getFontMetrics(g.getFont());
-        g.drawString("pick a car", (SCREENWIDTH - metrics33.stringWidth("pick a car"))/2, SCREENHEIGHT/2);
+        g.drawString("pick a car", (SCREENWIDTH - metrics33.stringWidth("pick a car"))/2, (SCREENHEIGHT/2)+40);
     }
 
     public void restart(JButton btn){
@@ -445,15 +497,19 @@ public class Gamepanel extends JPanel implements ActionListener {
     public void gameOver(Graphics g) {
        
         String nd = "Bad Driver";
+        g.setColor(Color.red);
+        if (passed > max){
+            nd = "you tried you are higher than "+max;
+            g.setColor(Color.cyan);
+        }
         timer.stop();
         
         repaint();
-        g.setColor(Color.red);
+        
         g.setFont(new Font("Courier",Font.BOLD,40));
         FontMetrics metrics1 = getFontMetrics(g.getFont());
         g.drawString("Score: "+passed, (SCREENWIDTH - metrics1.stringWidth("Score: "+passed))/2, g.getFont().getSize());
         
-        g.setColor(Color.red);
         g.setFont(new Font("Courier",Font.BOLD,75));
         FontMetrics metrics = getFontMetrics(g.getFont());
         g.drawString("Game Over", (SCREENWIDTH - metrics.stringWidth("Game Over"))/2, SCREENHEIGHT/2);
@@ -466,7 +522,6 @@ public class Gamepanel extends JPanel implements ActionListener {
         try {
             reBtn = new JButton(new ImageIcon(ImageIO.read(new File("C:\\Users\\MC DESMOND\\dextop\\java\\game\\game\\src\\re.png"))));
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             reBtn = buttons.get(0);
             e.printStackTrace();
         }
@@ -479,7 +534,7 @@ public class Gamepanel extends JPanel implements ActionListener {
             }
             
         });
-        add(reBtn);
+        add(reBtn,BorderLayout.CENTER);
         
     }
     public void intro(Graphics g){
@@ -564,190 +619,3 @@ public class Gamepanel extends JPanel implements ActionListener {
     }
 }
 
-
-
-/* 
-public class Gamepanel extends JPanel implements ActionListener {
-    
-    static final int SCREENWIDTH = 600;
-    static final int SCREENHEIGHT = 600;
-    static final int UNITSIZE = 12;
-    static final int DELAY = 70;
-    static final int GAMEUNITS = (SCREENWIDTH*SCREENHEIGHT)/UNITSIZE;
-    final int X[] = new int[GAMEUNITS];
-    final int Y[] = new int[GAMEUNITS];
-    int bodyParts = 10;
-    int applesEaten;
-    int appleX;
-    int appleY;
-    char direction = 'R';
-    boolean Running = false;
-    Timer timer;
-    Random random;
-
-    Gamepanel(){
-        random = new Random();
-        this.setPreferredSize(new Dimension(SCREENWIDTH,SCREENHEIGHT));
-        this.setBackground(Color.black);
-        this.setFocusable(true);
-        this.addKeyListener(new myKeyAdapter());
-        StartGame();
-    }
-    public void StartGame(){
-        newApple();
-        Running = true;
-        timer = new Timer(DELAY, this);
-        timer.start();
-    }
-    public void paintComponent(Graphics g){
-        super.paintComponent(g);
-        draw(g);
-
-    }
-    public void draw(Graphics g){
-        if (Running)
-        {
-            
-            // for (int i=0;i<SCREENHEIGHT/UNITSIZE;i++){
-            //     // g.setColor(Color.cyan);
-            //     g.drawLine(i*UNITSIZE,0,i*UNITSIZE,SCREENHEIGHT);
-            //     g.drawLine(0,i*UNITSIZE,SCREENWIDTH,i*UNITSIZE);
-            // }
-        g.setColor(Color.red);
-        g.fillOval(appleX, appleY, UNITSIZE, UNITSIZE);
-
-        for (int i=0;i<bodyParts;i++){
-            if (i==0){
-                g.setColor(Color.cyan);
-                g.fillRect(X[i], Y[i], UNITSIZE, UNITSIZE);
-            }
-            else{
-                g.setColor(new Color(45,180,0));
-                g.setColor(new Color(random.nextInt(255),random.nextInt(255),random.nextInt(255)));
-                g.fillRect(X[i], Y[i], UNITSIZE, UNITSIZE);
-            }
-        }
-        g.setColor(Color.red);
-        g.setFont(new Font("Courier",Font.BOLD,40));
-        FontMetrics metrics = getFontMetrics(g.getFont());
-        g.drawString("Score: "+applesEaten, (SCREENWIDTH - metrics.stringWidth("Score: "+applesEaten))/2, g.getFont().getSize());
-        }
-        else{
-            gameOver(g);
-        }
-        g.dispose();
-    }
-    public void newApple(){
-        appleX = random.nextInt((int)(SCREENWIDTH/UNITSIZE))*UNITSIZE;
-        appleY = random.nextInt((int)(SCREENHEIGHT/UNITSIZE))*UNITSIZE;
-    }
-    public void move (){
-        for (int i=bodyParts;i>0;i--){
-            X[i] = X[i-1];
-            Y[i] = Y[i-1];
-        }
-        switch(direction){
-            case 'U':
-                Y[0] = Y[0] - UNITSIZE;
-                break;
-            case 'D':
-                Y[0] = Y[0] + UNITSIZE;
-                break;
-            case 'L':
-                X[0] = X[0] - UNITSIZE;
-                break;
-            case 'R':
-                X[0] = X[0] + UNITSIZE;
-                break;
-        }
-    }
-    public void checkApple(){
-        if ((X[0] == appleX) && (Y[0] == appleY)){
-            bodyParts++;
-            applesEaten++;
-            newApple();
-        }
-    }
-    public void checkCollisions(){
-        for (int i=bodyParts;i>0;i--){
-            if ((X[0] == X[i]) && (Y[0] == Y[i])){
-                Running = false;
-                break;
-            }
-        }
-        if (X[0] < 0){
-            Running = false;
-        }
-        if (X[0] > SCREENWIDTH){
-            Running = false;
-        }
-        if (Y[0] < 0){
-            Running = false;
-        }
-        if (Y[0] > SCREENHEIGHT){
-            Running = false;
-        }
-        if (!Running){
-            timer.stop();
-        }
-
-    
-
-    }
-    public void gameOver(Graphics g){
-        g.setColor(Color.red);
-        g.setFont(new Font("Courier",Font.BOLD,40));
-        FontMetrics metrics1 = getFontMetrics(g.getFont());
-        g.drawString("Score: "+applesEaten, (SCREENWIDTH - metrics1.stringWidth("Score: "+applesEaten))/2, g.getFont().getSize());
-        
-        g.setColor(Color.red);
-        g.setFont(new Font("Courier",Font.BOLD,75));
-        FontMetrics metrics = getFontMetrics(g.getFont());
-        g.drawString("Game Over", (SCREENWIDTH - metrics.stringWidth("Game Over"))/2, SCREENHEIGHT/2);
-
-    }
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        if (Running){
-            move();
-            checkApple();
-            checkCollisions();
-        }
-        repaint();
-    }
-    public class GameThread extends Thread{
-        public void run(){}
-        
-    }
-    public class myKeyAdapter extends KeyAdapter{
-        @Override
-        public void keyPressed(KeyEvent e) {
-            switch(e.getKeyCode()){
-                case KeyEvent.VK_LEFT:
-                    if (direction != 'R'){
-                        direction = 'L';
-                    }
-                    break;
-                case KeyEvent.VK_RIGHT:
-                    if (direction != 'L'){
-                        direction = 'R';
-                    }
-                    break;
-                case KeyEvent.VK_UP:
-                    if (direction != 'D'){
-                        direction = 'U';
-                    }
-                    break;
-                case KeyEvent.VK_DOWN:
-                    if (direction != 'U'){
-                        direction = 'D';
-                    }
-                    break;
-                case KeyEvent.VK_SPACE:
-                    StartGame();
-                    break;
-            }
-        }
-    }
-}
-*/
