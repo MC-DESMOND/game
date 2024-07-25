@@ -1,4 +1,5 @@
 import java.awt.event.*;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.awt.*;
@@ -11,7 +12,7 @@ import javax.swing.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
-
+import java.awt.geom.AffineTransform;
 
 
 public class Gamepanel extends JPanel implements ActionListener {
@@ -34,7 +35,7 @@ public class Gamepanel extends JPanel implements ActionListener {
     Clip clip1;
     Clip clip2;
     int sec = 0;
-    int speed = 3;
+    int speed = 4;
     int yourspeed = 1;
     int ispeed = speed;
     int max = 50;
@@ -51,8 +52,9 @@ public class Gamepanel extends JPanel implements ActionListener {
     ArrayList<Integer> ylist;
     int[] ri = new int[100];
     int introsleep = 60*4;
-    int ra = 3;
+    int ra = 10;
     int imagesnum = 5;
+    int treesnum = 5;
     boolean f = false;
     boolean sp = false;
     boolean won = false;
@@ -63,14 +65,21 @@ public class Gamepanel extends JPanel implements ActionListener {
     boolean started = false;
     boolean setted  = false;
     boolean sw = false;
+    double ang = 0;
+    boolean fang = true;
     int ci = 0;
     boolean cc = false;
     JButton reBtn;
     KeyAdapter AL;
+    ArrayList<BufferedImage> trees;
+    ArrayList<BufferedImage> treesImages;
+    ArrayList<Integer> treesx;
+    ArrayList<Integer> treesy;
     ArrayList<JButton> buttons = new ArrayList<>();
     String rootFolder = "C:\\Users\\MC DESMOND\\dextop\\java\\game\\game\\src\\cars\\";
     JProgressBar progressBar;
-    public Gamepanel() throws IOException {
+    String bgfile = rootFolder+"bg1.png";
+    public Gamepanel(BorderLayout bl) throws IOException {
         super();
         // Convert to BufferedImage for efficiency (optional)
         // progressBar = new JProgressBar(0);
@@ -83,19 +92,33 @@ public class Gamepanel extends JPanel implements ActionListener {
         carIcons = new ArrayList<>();
         xlist = new ArrayList<>();
         ylist = new ArrayList<>();
+        trees = new ArrayList<>();
+        treesx = new ArrayList<>();
+        treesy = new ArrayList<>();
+        treesImages = new ArrayList<>();
         enys = new BufferedImage[imagesnum+1];
         for (int i=0; i <= imagesnum;i++ ){
             String name = rootFolder+"car"+(i+1)+".png";
             System.out.println(name);
             File file = new File(name);
-            // file.setReadable(true);
             BufferedImage in = ImageIO.read(file);
             carImages.add(in);
             ImageIcon icon = new ImageIcon(name);
             carIcons.add(icon);
             
+            
 
         }
+        for (int i=1;i<=treesnum;i++){
+            String name = rootFolder+"tree"+i+".png";
+            File file = new File(name);
+            BufferedImage in = ImageIO.read(file);
+            treesImages.add(in);
+            trees.add(in);
+            treesx.add(0);
+            treesy.add(0);
+        }
+        
         image = carImages.get(3);
         logo = ImageIO.read(new File("C:\\Users\\MC DESMOND\\dextop\\java\\game\\game\\src\\logo.png"));
         eIs = ImageIO.read(new File("C:\\Users\\MC DESMOND\\dextop\\java\\game\\game\\src\\cars\\car3.png"));
@@ -120,11 +143,10 @@ public class Gamepanel extends JPanel implements ActionListener {
             clip1.loop(Clip.LOOP_CONTINUOUSLY);
             
         } catch (Exception e1) {
-            // TODO Auto-generated catch block
             e1.printStackTrace();
         }
         for (int i =0 ;i <= ra ; i++){
-            ri[i] = (int) 1-((roadi.getHeight())*i);
+            ri[i] = (int) ((roadi.getHeight())*i);
         }
         for (int i=0; i <= enysPerV;i++ ){
             BufferedImage img2 = carImages.get(random.nextInt(0,enysPerV));
@@ -163,6 +185,16 @@ public class Gamepanel extends JPanel implements ActionListener {
         return re;
     }
     
+    public static BufferedImage rotate(BufferedImage image, double angle) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        AffineTransform transform = new AffineTransform();
+        transform.rotate(Math.toRadians(angle), width / 2.0, height / 2.0); // Rotate around center
+        BufferedImage rotatedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        AffineTransformOp op = new AffineTransformOp(transform, AffineTransformOp.TYPE_BILINEAR); // Use bilinear interpolation for smooth scaling
+        op.filter(image, rotatedImage);
+        return rotatedImage;
+      }
 
     public void moveEnys(){
         int x = 0;
@@ -209,10 +241,29 @@ public class Gamepanel extends JPanel implements ActionListener {
             enysx[i] = x;
             enysy[i] = y;
             
-            if (passed > max){
-                // won = true;
-                // Running = false;
+            
+        }
+        int x2 = 0;
+        int y2 = 0;
+        ArrayList<Integer> xx =  new ArrayList<>();
+        xx.add(0);
+        
+        for (int i=0;i<treesnum;i++){
+            if (treesy.get(i) >= SCREENHEIGHT+trees.get(i).getHeight()){
+                img = treesImages.get(random.nextInt(0,treesnum));
+                xx.add(1, SCREENWIDTH-img.getWidth());
+                x2 = xx.get(random.nextInt(0, xx.size()));
+                System.out.println(x2);
+                y2 = ylist.get(random.nextInt(ylist.size()-1));
             }
+            else{
+                x2 = treesx.get(i);
+                if (!paused){
+                    y2 = treesy.get(i) + (int) (((SCREENHEIGHT-100)-youry)/10) +3;
+                }
+            }
+            treesx.set(i, x2);
+            treesy.set(i, y2);
         }
     }
     public void cheakEnys(){
@@ -234,22 +285,35 @@ public class Gamepanel extends JPanel implements ActionListener {
         if (Running)
         {
             for (int i =0 ;i < ra ; i++){
-                if (ri[i] >= roadi.getHeight()){
+                if (ri[i] >= SCREENHEIGHT+20){
                     // System.out.println(ri[i]-roadi.getHeight()); 
-                    ri[i] = 1-((roadi.getHeight()-((ri[i]-roadi.getHeight())+50))*(ra-2));
+                    ri[i] = 1-(roadi.getHeight()-(ri[i]-(SCREENHEIGHT+20)));
+                    // ri[i] = 1-((roadi.getHeight()-((ri[i]-SCREENHEIGHT)+50))*(ra-2));
                     // System.out.println(ri[i]);                    
                                        
                     sw = !sw;
                 }else{
                     if (paused == false)
                         {
+                            if (fang){
+                                ang +=0.001;
+                                if (ang>=5){
+                                    fang = false;
+                                }
+                            }else{
+                                ang -= 0.001;
+                                if (ang <= -5){
+                                    fang = true;
+                                }
+                            }
                             ri[i] += (int) (((SCREENHEIGHT-100)-youry)/10) +3;
                         }
                     
                 }
             }
+            
             for (int i =0 ;i < ra ; i++){
-                g.drawImage(roadi, 0, ri[i], null);
+                g.drawImage(roadi, -60, ri[i]-30, null);
             }
             // System.out.println(ri);
             if (sp == false){
@@ -262,6 +326,9 @@ public class Gamepanel extends JPanel implements ActionListener {
             g.drawImage(image, yourx, youry, null);
             for (int i=0; i <= enysPerV;i++ ){
                 g.drawImage(enys[i], enysx[i], enysy[i], null);
+            }
+            for (int i=0;i<treesnum;i++){
+                g.drawImage(trees.get(i), treesx.get(i), treesy.get(i), null);
             }
             g.setColor(Color.cyan);
             g.setFont(new Font("Courier",Font.BOLD,40));
@@ -280,13 +347,14 @@ public class Gamepanel extends JPanel implements ActionListener {
                 g.setFont(new Font("Courier",Font.BOLD,20));
                 FontMetrics metricsmm = getFontMetrics(g.getFont());
                 g.drawString("mute", (SCREENWIDTH - metricsmm.stringWidth("mute"))-10, g.getFont().getSize());
-            }g.setColor(Color.cyan);
-            for (int i : xlist){
-                g.drawLine(i,0,i,SCREENWIDTH);
             }
-            for (int i : ylist){
-                g.drawLine(0,i+SCREENHEIGHT*2,SCREENHEIGHT,i+SCREENHEIGHT*2);
-            }
+            // g.setColor(Color.cyan);
+            // for (int i : xlist){
+            //     g.drawLine(i,0,i,SCREENWIDTH);
+            // }
+            // for (int i : ylist){
+            //     g.drawLine(0,i+SCREENHEIGHT*2,SCREENHEIGHT,i+SCREENHEIGHT*2);
+            // }
 
         }else{
             if (started){
@@ -298,7 +366,6 @@ public class Gamepanel extends JPanel implements ActionListener {
                             clip2 = playSound("C:\\Users\\MC DESMOND\\dextop\\java\\game\\game\\src\\cheering.wav",6.0f);
                             clip2.start();
                         } catch (Exception e) {
-                            // TODO Auto-generated catch block
                             e.printStackTrace();
                         }
                         timer.setDelay(2000);
@@ -315,7 +382,6 @@ public class Gamepanel extends JPanel implements ActionListener {
                             clip2 = playSound("C:\\Users\\MC DESMOND\\dextop\\java\\game\\game\\src\\carcrash.wav",6.0f);
                             clip2.start();
                         } catch (Exception e) {
-                            // TODO Auto-generated catch block
                             e.printStackTrace();
                         }
                         timer.setDelay(2000);
@@ -433,6 +499,13 @@ public class Gamepanel extends JPanel implements ActionListener {
             buttons.reversed();
             cc = false;
         }
+        try {
+            BufferedImage bg1 = ImageIO.read(new File(bgfile));
+            g.drawImage(bg1, 0, 0,null);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         
         
             for (int i=0;i<carImages.size();i++){
@@ -441,7 +514,7 @@ public class Gamepanel extends JPanel implements ActionListener {
                     JButton imageButton = new JButton(ic);
                     imageButton.setBackground(Color.black);
                     imageButton.setText(String.format("car %d -", i));
-                    imageButton.setBorder(BorderFactory.createLineBorder(Color.cyan,1,true));
+                    imageButton.setBorder(BorderFactory.createLineBorder(Color.black,1,true));
                     int marginr = 300;
                     imageButton.setMargin(new Insets(marginr, marginr, marginr, marginr));
                     // imageButton.setPreferredSize(new Dimension(100, 50));
@@ -470,13 +543,13 @@ public class Gamepanel extends JPanel implements ActionListener {
             buttons.stream().forEach(e -> {
                 // System.out.println(e);
                 pause(50);
-                add(e,BorderLayout.PAGE_START);
+                add(e,BorderLayout.AFTER_LAST_LINE);
             });
             
         g.setColor(Color.cyan);
         g.setFont(new Font("Courier",Font.BOLD,40));
         FontMetrics metrics33 = getFontMetrics(g.getFont());
-        g.drawString("pick a car", (SCREENWIDTH - metrics33.stringWidth("pick a car"))/2, (SCREENHEIGHT/2)+40);
+        g.drawString("pick a car", ((SCREENWIDTH - metrics33.stringWidth("pick a car"))/2), (SCREENHEIGHT/2)+40);
     }
 
     public void restart(JButton btn){
@@ -495,7 +568,13 @@ public class Gamepanel extends JPanel implements ActionListener {
     }
 
     public void gameOver(Graphics g) {
-       
+        try {
+            BufferedImage bg1 = ImageIO.read(new File(bgfile));
+            g.drawImage(bg1, 0, 0,null);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         String nd = "Bad Driver";
         g.setColor(Color.red);
         if (passed > max){
@@ -519,13 +598,7 @@ public class Gamepanel extends JPanel implements ActionListener {
         FontMetrics m3 = getFontMetrics(g.getFont());
         g.drawString(nd, (SCREENWIDTH - m3.stringWidth(nd))/2, (SCREENHEIGHT/2)+40);
         
-        try {
-            reBtn = new JButton(new ImageIcon(ImageIO.read(new File("C:\\Users\\MC DESMOND\\dextop\\java\\game\\game\\src\\re.png"))));
-        } catch (IOException e) {
-            reBtn = buttons.get(0);
-            e.printStackTrace();
-        }
-        
+        reBtn = new JButton("restart");
         reBtn.addActionListener(new ActionListener() {
 
             @Override
@@ -538,6 +611,13 @@ public class Gamepanel extends JPanel implements ActionListener {
         
     }
     public void intro(Graphics g){
+        try {
+            BufferedImage bg1 = ImageIO.read(new File(bgfile));
+            g.drawImage(bg1, 0, 0,null);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         g.drawImage(logo, 
         (SCREENWIDTH/2)-(logo.getWidth()/2)
         , (SCREENHEIGHT/5), null);
@@ -545,7 +625,8 @@ public class Gamepanel extends JPanel implements ActionListener {
         g.setFont(new Font("Courier",Font.BOLD,40));
         FontMetrics metrics1 = getFontMetrics(g.getFont());
         g.drawString("Score: "+passed, (SCREENWIDTH - metrics1.stringWidth("Score: "+passed))/2, g.getFont().getSize());
-        g.setColor(Color.cyan);
+        float[] c2 = Color.RGBtoHSB(150, 200, 255, null);
+        g.setColor(Color.getHSBColor(c2[0],c2[1],c2[2]));
         g.setFont(new Font("Courier",Font.BOLD,75));
         FontMetrics metrics = getFontMetrics(g.getFont());
         g.drawString("DESDROID", (SCREENWIDTH - metrics.stringWidth("DESDROID"))/2, SCREENHEIGHT/2);
@@ -565,6 +646,13 @@ public class Gamepanel extends JPanel implements ActionListener {
         
     }
     public void WON(Graphics g){
+        try {
+            BufferedImage bg1 = ImageIO.read(new File(bgfile));
+            g.drawImage(bg1, 0, 0,null);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         g.setColor(Color.GREEN);
         g.setFont(new Font("Courier",Font.BOLD,40));
         FontMetrics metrics1 = getFontMetrics(g.getFont());
